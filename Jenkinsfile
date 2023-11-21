@@ -1,39 +1,33 @@
 pipeline {
-    agent { label "dev-server"}
+    agent any
     
     stages {
-        
         stage("code"){
-            steps{
-                git url: "https://github.com/LondheShubham153/node-todo-cicd.git", branch: "master"
-                echo 'bhaiyya code clone ho gaya'
+            steps {
+                echo "cloning the code"
+                git url:"https://github.com/shoaibalikhan76/django-todo-cicd.git", branch: "develop" 
+            }    
+        }
+        stage("build"){
+            steps {
+                echo "building the code"
+                sh "docker build -t notes-app ."
             }
         }
-        stage("build and test"){
-            steps{
-                sh "docker build -t node-app-test-new ."
-                echo 'code build bhi ho gaya'
-            }
-        }
-        stage("scan image"){
-            steps{
-                echo 'image scanning ho gayi'
-            }
-        }
-        stage("push"){
-            steps{
+        stage("push to dockerHub"){
+            steps {
+                echo "pushing the image to docker Hub"
                 withCredentials([usernamePassword(credentialsId:"dockerHub",passwordVariable:"dockerHubPass",usernameVariable:"dockerHubUser")]){
+                sh "docker tag notes-app ${env.dockerHubUser}/node-app:latest"
                 sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPass}"
-                sh "docker tag node-app-test-new:latest ${env.dockerHubUser}/node-app-test-new:latest"
-                sh "docker push ${env.dockerHubUser}/node-app-test-new:latest"
-                echo 'image push ho gaya'
+                sh "docker push ${env.dockerHubUser}/notes-app:latest"
                 }
             }
         }
         stage("deploy"){
-            steps{
+            steps {
+                echo "deploying the container"
                 sh "docker-compose down && docker-compose up -d"
-                echo 'deployment ho gayi'
             }
         }
     }
